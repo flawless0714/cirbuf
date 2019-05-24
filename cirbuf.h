@@ -27,13 +27,13 @@ static void create_buffer_mirror(cirbuf_t *cb)
     }
 
     rt = unlink(path);
-    if (rt == -1) {
+    if (rt) {
         perror("Failed to unlink");
         goto unlink_fail;
     }
 
     rt = ftruncate(fd, cb->size);
-    if (rt == -1) {
+    if (rt) {
         perror("Failed to ftruncate");
         goto ftruncate_fail;
     }
