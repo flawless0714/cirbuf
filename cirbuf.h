@@ -20,25 +20,60 @@ typedef struct {
 static void create_buffer_mirror(cirbuf_t *cb)
 {
     char path[] = "/tmp/cirbuf-XXXXXX";
-    int fd = mkstemp(path);
-    unlink(path);
-    ftruncate(fd, cb->size);
-    /* FIXME: validate if mkstemp, unlink, ftruncate failed */
+    int fd = mkstemp(path), rt;
+    if (fd == -1) {
+        perror("Failed to mkstemp");
+        goto mkstemp_fail;
+    }
+
+    rt = unlink(path);
+    if (rt == -1) {
+        perror("Failed to unlink");
+        goto unlink_fail;
+    }
+
+    rt = ftruncate(fd, cb->size);
+    if (rt == -1) {
+        perror("Failed to ftruncate");
+        goto ftruncate_fail;
+    }
 
     /* create the array of data */
     cb->data = mmap(NULL, cb->size << 1, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE,
                     -1, 0);
-    /* FIXME: validate if cb->data != MAP_FAILED */
+    if (cb->data == MAP_FAILED) {
+        perror("Failed to mmap (create)");
+        goto mmap_fail_ct; // mmap create
+    }
 
     void *address = mmap(cb->data, cb->size, PROT_READ | PROT_WRITE,
                          MAP_FIXED | MAP_SHARED, fd, 0);
-    /* FIXME: validate if address == cb->data */
+    if (address != cb->data) {
+        perror("Failed to mmap (main, addr != cb->data)");
+        goto mmap_fail_main;
+    }
 
     address = mmap(cb->data + cb->size, cb->size, PROT_READ | PROT_WRITE,
                    MAP_FIXED | MAP_SHARED, fd, 0);
-    /* FIXME: validate if address == cb->data + cb->size */
+    if (address != cb->data + cb->size) {
+        perror("Failed to mmap (mirror)");
+        goto mmap_fail_mirror;
+    }
 
     close(fd);
+    return; // success
+
+mmap_fail_mirror:
+mmap_fail_main:
+    munmap(cb->data, cb->size << 1);
+
+mmap_fail_ct:
+ftruncate_fail:    
+unlink_fail:
+    close(fd);
+
+mkstemp_fail:
+    exit(-1);
 }
 
 /** Create new circular buffer.
