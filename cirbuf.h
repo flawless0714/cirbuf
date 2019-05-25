@@ -117,7 +117,10 @@ static inline int cirbuf_offer(cirbuf_t *cb,
 
     memcpy(cb->data + cb->tail, data, size);
     cb->tail += size;
-    /* TODO: add your code here */
+    
+    if (cb->tail >= cb->size)
+        cb->tail %= cb->size;
+
     return size;
 }
 
