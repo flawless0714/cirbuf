@@ -5,6 +5,8 @@ implementation using mmap to ease the logic behind the caller which
 needs to know if the polled item crosses the maximum size of the
 underlying array.
 
+For more information, please refer to my note at [HackMD](https://hackmd.io/s/Hk157dEaV).
+
 ## Internals
 
 1. mmap is used to mirror the buffer like the following:
