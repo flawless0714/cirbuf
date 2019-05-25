@@ -143,8 +143,7 @@ static inline unsigned char *cirbuf_peek(const cirbuf_t *cb)
     if (cirbuf_is_empty(cb))
         return NULL;
 
-    /* TODO: add your own code here */
-    return NULL;
+    return cb->data + cb->head;
 }
 
 /** Release data at the head from the circular buffer.
