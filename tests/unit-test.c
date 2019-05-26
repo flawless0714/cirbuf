@@ -1,6 +1,17 @@
+/*
+ * TODOs:
+ * 1. On exit, we should free dynamic memory which used by error messages.
+ * 2. We should wrap signal handler at first time the signal is being
+ *    caught, this make the code more instinct and make `CuTestRun` more
+ *    clear. The way to do this is change `CuSuiteSigSegvHandler` into
+ *    `CuSuiteSigHandler`, and done the handle within switch case with
+ *    `sig` which indicating the signal being caught.
+ */
+
 #include <assert.h>
 #include <math.h>
 #include <setjmp.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +26,8 @@ char *CuStrCopy(const char *old);
 #define HUGE_STRING_LEN 8192
 #define STRING_MAX 256
 #define STRING_INC 256
+
+jmp_buf buf_sig;
 
 struct CuStringInternal {
     int length;
@@ -140,10 +153,37 @@ void CuTestRun(CuTest *tc)
 
     jmp_buf buf;
     tc->jumpBuf = &buf;
+
+    /*
+     * On creation, this statement will not entered. If any signal caught,
+     * we enter these statements with proper signal number which is 
+     * specified for CuSuite. Once the handler is done, we use goto to
+     * jump to the end of this function to prevent duplicate call of same
+     * test case.
+     */
+    if (CU_SIGSEGV == sigsetjmp(buf_sig, 1)) {
+        CuString string;
+
+        CuStringInit(&string);
+        CuStringAppend(&string, "Segmentation fault occured!");
+        tc->message = string.buffer;
+
+        tc->failed = 1;
+
+        goto func_end;
+    }
+    /*
+    else if () {
+        // Add your custom signal handler here
+        goto func_end;
+    } 
+    */
     if (setjmp(buf) == 0) {
         tc->ran = 1;
         (tc->function)(tc);
     }
+
+func_end:
     tc->jumpBuf = 0;
 }
 
@@ -201,6 +241,8 @@ CuSuite *CuSuiteNew(void)
 {
     CuSuite *testSuite = CU_ALLOC(CuSuite);
     CuSuiteInit(testSuite);
+    CuSuiteSigRegister();
+
     return testSuite;
 }
 
@@ -268,4 +310,15 @@ void CuSuiteDetails(CuSuite *testSuite, CuString *details)
     CuStringAppendFormat(details, "Passes: %d ",
                          testSuite->count - testSuite->failCount);
     CuStringAppendFormat(details, "Fails: %d\n", testSuite->failCount);
+}
+
+void CuSuiteSigRegister(void)
+{
+    // more signal handler can add to here
+    signal(SIGSEGV, CuSuiteSigSegvHandler);
+}
+
+void CuSuiteSigSegvHandler(int sig)
+{
+    siglongjmp(buf_sig, CU_SIGSEGV);
 }

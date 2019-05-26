@@ -55,5 +55,10 @@ void CuSuiteAddSuite(CuSuite *testSuite, CuSuite *testSuite2);
 void CuSuiteRun(CuSuite *testSuite);
 void CuSuiteSummary(CuSuite *testSuite, CuString *summary);
 void CuSuiteDetails(CuSuite *testSuite, CuString *details);
+void CuSuiteSigRegister(void);
+void CuSuiteSigSegvHandler(int sig);
+
+/* CuSuite signal handler number */
+#define CU_SIGSEGV 1
 
 #endif /* CU_TEST_H */
