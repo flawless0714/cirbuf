@@ -1,3 +1,17 @@
+/*
+ * TODOs:
+ * 1. We should fix some functions inside `cirbuf.h` to having return value 
+ *    themselves which indicating if the function is succeeded. E.g.
+ *    `cirbuf_new`, if we trying to mmap a memory which is too large to map
+ *    , it should instead return a false-like return value to indicate that
+ *    the function has failed, rather than calling exit(-1) to exit the
+ *    test directly. This is bad when running unit test.
+ * 2. We should call perror from test suite, instead of calling from the API. That
+ *    cause some performance penalty and output error log to stdout, which user
+ *    may not happy to see this, because the failure is informed through the
+ *    return value, user knew about it themself.
+ */
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
